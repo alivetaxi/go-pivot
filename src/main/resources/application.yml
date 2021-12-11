@@ -2,12 +2,13 @@ pivot:
   working-dir: D:/LetsPivot
   original-csv:
     dir-name: OriginalCsv
-    file-name: DailyOptionsDelta.csv
+    file-name: CarefulQuery.csv
   error-log:
     dir-name: ErrorLog
     file-name: app-error-%s.log
   result-xlsx:
     dir-name: ResultXlsx
-    file-name: DailyOptionsDelta.xlsx
-  row-names: 契約,買賣權,到期月份(週別)
-  sum-column-names: 履約價格,Delta值
+    file-name: CarefulQuery.xlsx
+  row-names: 業務代碼,科目編碼,科目名稱
+  sum-column-names: 金額,原幣值
+  credit-debit-name: 借貸方

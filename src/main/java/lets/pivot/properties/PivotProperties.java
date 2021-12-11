@@ -21,6 +21,7 @@ public class PivotProperties {
 	private DirAndFile resultXlsx;
 	private List<String> rowNames;
 	private List<String> sumColumnNames;
+	private String creditDebitName;
 
 	@Data
 	public static class DirAndFile {

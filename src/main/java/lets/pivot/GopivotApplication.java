@@ -1,5 +1,6 @@
 package lets.pivot;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
@@ -20,7 +21,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import com.alibaba.excel.EasyExcel;
-import com.opencsv.CSVReader;
 
 import lets.pivot.properties.Constants;
 import lets.pivot.properties.PivotProperties;
@@ -43,11 +43,11 @@ public class GopivotApplication implements CommandLineRunner {
 		String errorLogFileName = pivotProp.getErrorLogFileName();
 		String resultXlsxFileName = pivotProp.getResultXlsxFileName();
 
-		try (CSVReader reader = new CSVReader(
+		try (BufferedReader reader = new BufferedReader(
 				new InputStreamReader(new FileInputStream(originalCsvFileName), "UTF-8"));) {
 			// 檢查計算欄位是否都存在
-			List<String> headers = Arrays.asList(reader.readNext()).stream()
-					.map(h -> h.replaceAll(Constants.UTF8_BOM, "")).collect(Collectors.toList());
+			List<String> headers = Arrays.asList(reader.readLine().split("\"\\,\"")).stream()
+					.map(h -> h.replaceAll(Constants.UTF8_BOM, "").replaceAll("\"", "")).collect(Collectors.toList());
 
 			int[] rowNamesIndex = new int[pivotProp.getRowNames().size()];
 			int[][] sumColumnNamesIndex = new int[pivotProp.getSumColumnNames().size()][2];
@@ -58,6 +58,11 @@ public class GopivotApplication implements CommandLineRunner {
 				}
 				rowNamesIndex[i] = headers.indexOf(pivotProp.getRowNames().get(i));
 			}
+
+			if (!headers.contains(pivotProp.getCreditDebitName())) {
+				throw new Exception(String.format("欄位名稱「%s」不存在於表頭", pivotProp.getCreditDebitName()));
+			}
+			int creditDebitIndex = headers.indexOf(pivotProp.getCreditDebitName());
 
 			for (int i = 0; i < pivotProp.getSumColumnNames().size(); i++) {
 				for (int j = 0; j < pivotProp.getSumColumnNames().get(i).length; j++) {
@@ -78,21 +83,32 @@ public class GopivotApplication implements CommandLineRunner {
 			}
 
 			// 計算樞紐
+			String nextLineStr;
 			String[] nextLine;
 			String[] mapKeyArr = new String[pivotProp.getRowNames().size()];
 			String mapKey;
 			List<Object> lineContent;
-			while ((nextLine = reader.readNext()) != null) {
+			String creditDebit;
+			BigDecimal thisValue;
+			while ((nextLineStr = reader.readLine()) != null) {
+				nextLine = nextLineStr.split(",");
+				for (int i = 0; i < nextLine.length; i++) {
+					nextLine[i] = nextLine[i].replaceAll("\\t", "").replaceAll("\"", "");
+				}
+
 				for (int i = 0; i < pivotProp.getRowNames().size(); i++) {
 					mapKeyArr[i] = nextLine[rowNamesIndex[i]];
 				}
 				mapKey = String.join("^", mapKeyArr);
+				creditDebit = nextLine[creditDebitIndex];
+
 				if (result.containsKey(mapKey)) {
 					lineContent = result.get(mapKey);
 					for (int i = 0; i < pivotProp.getSumColumnNames().size(); i++) {
+						thisValue = new BigDecimal(nextLine[sumColumnNamesIndex[i][0]]);
 						lineContent.set(i + pivotProp.getRowNames().size(),
 								new BigDecimal(lineContent.get(i + pivotProp.getRowNames().size()).toString())
-										.add(new BigDecimal(nextLine[sumColumnNamesIndex[i][0]])));
+										.add("C".equals(creditDebit) ? thisValue : thisValue.negate()));
 					}
 				} else {
 					lineContent = new ArrayList<Object>();
@@ -100,7 +116,8 @@ public class GopivotApplication implements CommandLineRunner {
 						lineContent.add(nextLine[rowNamesIndex[i]]);
 					}
 					for (int i = 0; i < pivotProp.getSumColumnNames().size(); i++) {
-						lineContent.add(new BigDecimal(nextLine[sumColumnNamesIndex[i][0]]));
+						thisValue = new BigDecimal(nextLine[sumColumnNamesIndex[i][0]].replaceAll("\"\\t", ""));
+						lineContent.add("C".equals(creditDebit) ? thisValue : thisValue.negate());
 					}
 				}
 				result.put(mapKey, lineContent);
