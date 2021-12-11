@@ -1,0 +1,13 @@
+pivot:
+  working-dir: D:/LetsPivot
+  original-csv:
+    dir-name: OriginalCsv
+    file-name: DailyOptionsDelta.csv
+  error-log:
+    dir-name: ErrorLog
+    file-name: app-error-%s.log
+  result-xlsx:
+    dir-name: ResultXlsx
+    file-name: DailyOptionsDelta.xlsx
+  row-names: 契約,買賣權,到期月份(週別)
+  sum-column-names: 履約價格,Delta值
