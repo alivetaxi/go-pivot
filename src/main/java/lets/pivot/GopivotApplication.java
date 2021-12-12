@@ -108,7 +108,7 @@ public class GopivotApplication implements CommandLineRunner {
 						thisValue = new BigDecimal(nextLine[sumColumnNamesIndex[i][0]]);
 						lineContent.set(i + pivotProp.getRowNames().size(),
 								new BigDecimal(lineContent.get(i + pivotProp.getRowNames().size()).toString())
-										.add("C".equals(creditDebit) ? thisValue : thisValue.negate()));
+										.add(getValueByCreditDebit(creditDebit, thisValue)));
 					}
 				} else {
 					lineContent = new ArrayList<Object>();
@@ -116,8 +116,8 @@ public class GopivotApplication implements CommandLineRunner {
 						lineContent.add(nextLine[rowNamesIndex[i]]);
 					}
 					for (int i = 0; i < pivotProp.getSumColumnNames().size(); i++) {
-						thisValue = new BigDecimal(nextLine[sumColumnNamesIndex[i][0]].replaceAll("\"\\t", ""));
-						lineContent.add("C".equals(creditDebit) ? thisValue : thisValue.negate());
+						thisValue = new BigDecimal(nextLine[sumColumnNamesIndex[i][0]]);
+						lineContent.add(getValueByCreditDebit(creditDebit, thisValue));
 					}
 				}
 				result.put(mapKey, lineContent);
@@ -129,6 +129,10 @@ public class GopivotApplication implements CommandLineRunner {
 			Files.write(new File(errorLogFileName).toPath(), ExceptionUtils.getStackTrace(e).getBytes(),
 					StandardOpenOption.CREATE);
 		}
+	}
+
+	private BigDecimal getValueByCreditDebit(String creditDebit, BigDecimal orgValue) {
+		return "D".equals(creditDebit) ? orgValue : orgValue.negate();
 	}
 
 }
